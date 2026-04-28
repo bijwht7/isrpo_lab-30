@@ -4,8 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using HeroesApi.Models;
 using HeroesApi.Data;
 using System.Runtime.Versioning;
+using Microsoft.VisualBasic;
+using System.Data.Common;
 
 namespace HeroesApi.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class HeroesController : ControllerBase
@@ -23,7 +26,7 @@ public class HeroesController : ControllerBase
         {
             return NotFound(new { message = $"Герой с id={id} не найден" });
         }
-        return  Ok(hero);
+        return Ok(hero);
     }
     [HttpGet("demo")]
     public ActionResult GetDemo()
@@ -46,6 +49,36 @@ public class HeroesController : ControllerBase
             withOurSettings = JsonSerializer.Deserialize<object>(
                 JsonSerializer.Serialize(hero, ourOptions), ourOptions),
             note = "Сравните имена полей  значений universe в двух вариантах"
+        });
+    }
+    [HttpGet("serialize")]
+    public ActionResult GetSerialize()
+    {
+        var options = new JsonSerializerOptions
+        {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                Converters = { new JsonStringEnumConverter() }
+            
+        };
+        var hero = new Hero
+        {
+            Id = 99,
+            Name = "Тестовой герой",
+            RealName = "Студент",
+            Universe = Universe.Marvel,
+            PowerLevel = 50,
+            Powers = new() { "программирование", "дебаггинг" },
+            Weapon = new() { Name = "клавиатура", IsRanged = false },
+            InternalNotes = "Это поле не попадет в Json"
+        };
+        string serialized = JsonSerializer.Serialize(hero, options);
+        var deserialized = JsonSerializer.Deserialize<Hero>(serialized, options);
+        return Ok(new
+        {
+            serializedJson = serialized,
+            deserializedObject = deserialized,
+            internalNotesAfterDeserialize = deserialized?.InternalNotes ?? "null - поле было проигнорировано"
         });
     }
 
